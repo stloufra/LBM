@@ -14,6 +14,10 @@
 using namespace TNL;
 using namespace TNL::Algorithms;
 
+using Real = float;
+using Vector = TNL::Containers::StaticVector< 3, Real >;
+using Device = TNL::Devices::Cuda;
+
 typedef struct {
     int x, y, z;
 } Vertex;
@@ -21,12 +25,6 @@ typedef struct {
 typedef struct {
     int x, y, z;
 } Normal;
-
-//typedef struct {
-//    double ux, uy, uz;
-//} Velocity;
-
-using Vector = TNL::Containers::StaticVector< 3, float >;
 
 typedef struct {
     Vertex vertex;
@@ -38,7 +36,7 @@ typedef struct {
 typedef struct {
     Vertex vertex;
     Vector normal;
-    float density;
+    Real density;
     bool regular;
 } boundaryConditionOutlet;
 
@@ -57,8 +55,24 @@ typedef struct {
 
 typedef struct {
     Vertex vertex;
+    Vector normal;
+    Real DeltaRho;
+    int periodicIndex;
     bool regular;
+} boundaryConditionPeriodicDP;
+
+typedef struct {
+    Vertex vertex;
+    bool regular;
+    Vector normal;
+    Vector slipVelocity;
 } boundaryConditionWall;
+
+typedef struct {
+    int key;
+    int partner_index;
+    Vector partner_normal;
+} periodicHash;
 
 typedef struct {
     double x, y, z;
@@ -68,18 +82,30 @@ class LBMTraits {
 
 public:
 
+    // Helper to detect if a type exists
+    template <typename, typename = std::void_t<>>
+    struct is_defined : std::false_type {};
 
-    using RealType = float;
+    // Specialization if the type exists
+    template <typename T>
+    struct is_defined<T, std::void_t<decltype(std::declval<T>())>> : std::true_type {};
 
-    using DeviceType = TNL::Devices::Cuda;
+
+    using RealType = Real;
+
+    using DeviceType =  Device;
     using DeviceTypeHost = TNL::Devices::Host;
 
-    using VectorType = TNL::Containers::StaticVector< 3, RealType >;
+    using VectorType = Vector;
     using VectorTypeInt = TNL::Containers::StaticVector< 3, int >;
     using VectorTypeProbeCuda = TNL::Containers::Vector< RealType, DeviceType >;
     using VectorTypeProbeHost = TNL::Containers::Vector< RealType, DeviceTypeHost >;
 
     using TensorType = TNL::Containers::StaticVector<3, TNL::Containers::StaticVector< 3, RealType >>;
+
+    using PeriodicMap= std::unordered_map<int, std::pair<int, VectorType>>;
+    using PeriodicMapHost= TNL::Containers::Array<periodicHash, DeviceTypeHost>;
+    using PeriodicMapDevice = TNL::Containers::Array<periodicHash, DeviceType>;
 
     using NDArray3DSequenceType = std::index_sequence<2, 1, 0>;
     using NDArray4DSequenceType = std::index_sequence<3, 2, 1, 0>;
@@ -147,6 +173,16 @@ public:
                                                                 DeviceType>;
 
     using ArrayTypeBoundaryPeriodicHost = TNL::Containers::NDArray< boundaryConditionPeriodic ,
+                                                                TNL::Containers::SizesHolder<int, 0>,
+                                                                std::index_sequence<0>,
+                                                                DeviceTypeHost>;
+
+    using ArrayTypeBoundaryPeriodicDP = TNL::Containers::NDArray <    boundaryConditionPeriodicDP ,
+                                                               TNL::Containers::SizesHolder<int, 0>,
+                                                               std::index_sequence<0>,
+                                                               DeviceType>;
+
+    using ArrayTypeBoundaryPeriodicDPHost = TNL::Containers::NDArray< boundaryConditionPeriodicDP ,
                                                                 TNL::Containers::SizesHolder<int, 0>,
                                                                 std::index_sequence<0>,
                                                                 DeviceTypeHost>;

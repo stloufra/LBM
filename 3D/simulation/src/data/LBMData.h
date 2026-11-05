@@ -25,6 +25,9 @@ public:
     using ArrayTypeBoundaryPeriodic = typename LBMTraits::ArrayTypeBoundaryPeriodic;
     using ArrayTypeBoundaryPeriodicHost = typename LBMTraits::ArrayTypeBoundaryPeriodicHost;
 
+    using ArrayTypeBoundaryPeriodicDP = typename LBMTraits::ArrayTypeBoundaryPeriodicDP;
+    using ArrayTypeBoundaryPeriodicDPHost = typename LBMTraits::ArrayTypeBoundaryPeriodicDPHost;
+
     using ArrayTypeVariablesScalar = typename LBMTraits::ArrayTypeVariablesScalar;
     using ArrayTypeVariablesScalarHost = typename LBMTraits::ArrayTypeVariablesScalarHost;
 
@@ -34,12 +37,16 @@ public:
     using ArrayTypeDFunction = typename LBMTraits::ArrayTypeDFunction;
     using ArrayTypeDFunctionHost = typename LBMTraits::ArrayTypeDFunctionHost;
 
+    using PeriodicMapHost = typename LBMTraits::PeriodicMapHost;
+    using PeriodicMapDevice = typename LBMTraits::PeriodicMapDevice;
+
     //mesh - host
     ArrayTypeMeshHost meshFluidHost;
     ArrayTypeBoundaryInletHost meshBoundaryInletHost;
     ArrayTypeBoundaryOutletHost meshBoundaryOutletHost;
     ArrayTypeBoundarySymmetryHost meshBoundarySymmetryHost;
     ArrayTypeBoundaryPeriodicHost meshBoundaryPeriodicHost;
+    ArrayTypeBoundaryPeriodicDPHost meshBoundaryPeriodicDPHost;
     ArrayTypeBoundaryWallHost meshBoundaryWallHost;
 
     //mesh - device
@@ -48,25 +55,45 @@ public:
     ArrayTypeBoundaryOutlet meshBoundaryOutlet;
     ArrayTypeBoundarySymmetry meshBoundarySymmetry;
     ArrayTypeBoundaryPeriodic meshBoundaryPeriodic;
+    ArrayTypeBoundaryPeriodicDP meshBoundaryPeriodicDP;
     ArrayTypeBoundaryWall meshBoundaryWall;
 
     // variables
     ArrayTypeVariablesScalar rho;
     ArrayTypeVariablesScalar p;
-    ArrayTypeVariablesVector u;
+    //ArrayTypeVariablesVector u;
 
     ArrayTypeVariablesScalar rhoTimeAvg;
-    ArrayTypeVariablesScalar pTimeAvg;
-    ArrayTypeVariablesVector uTimeAvg;
 
-    ArrayTypeVariablesVector u_error;
+    ArrayTypeVariablesScalar ux;
+    ArrayTypeVariablesScalar uy;
+    ArrayTypeVariablesScalar uz;
+
+    ArrayTypeVariablesScalar pTimeAvg;
+    //ArrayTypeVariablesVector uTimeAvg;
+
+    ArrayTypeVariablesScalar uxTimeAvg;
+    ArrayTypeVariablesScalar uyTimeAvg;
+    ArrayTypeVariablesScalar uzTimeAvg;
+
+    ArrayTypeVariablesScalar ux_error;
+    ArrayTypeVariablesScalar uy_error;
+    ArrayTypeVariablesScalar uz_error;
+
     ArrayTypeVariablesScalar omega;
 
     ArrayTypeVariablesScalarHost rho_out;
     ArrayTypeVariablesScalarHost omega_out;
     ArrayTypeVariablesScalarHost p_out;
-    ArrayTypeVariablesVectorHost u_out;
+    //ArrayTypeVariablesVectorHost u_out;
 
+    ArrayTypeVariablesScalarHost u_x_out;
+    ArrayTypeVariablesScalarHost u_y_out;
+    ArrayTypeVariablesScalarHost u_z_out;
+
+    //periodic maps
+    PeriodicMapHost periodicMapHost;
+    PeriodicMapDevice periodicMapDevice;
 
 
     // distribution function

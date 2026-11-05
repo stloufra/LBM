@@ -41,16 +41,9 @@ int main() {
     Constants->resolution_factor = 2000;
     Constants->additional_factor = 1;                      // at least 1 for additional wall around
     Constants->point_outside = {-1, -1, -1};
-    Constants->file_name = "BackwardStepTurbulent.off";
+    Constants->file_name = "./CAD/BackwardStepTurbulent.off";
     Constants->mesh_name = "BackwardStepTurbulent";
 
-    /*
-    Dimensions: 453 63 63
-    Resolution Factor: 0.3
-    Additional Factor: 1
-    BBmaxx: 1500
-    BBmaxy: 200
-    BBmaxz: 200*/
 
 
     //----------------------HANDLING GEOMETRY--------------------------//

@@ -12,45 +12,40 @@
 using DeviceType = TNL::Devices::Cuda;
 using DeviceTypeHost = TNL::Devices::Host;
 
+
+
+
+
 using RealType = float;
-
-
 
 int main()
 {
-    const RealType L = 15.0f;                //[m] - x dimension
-    const int Nx = 700;                     //[1]
-    const int Ny = 100;                      //[1]
+
+    const RealType L = 0.3f;                //[m] - x dimension
+    const int Nx = 1000;                    //[1]
+    const int Ny = 150;                     //[1]
 
     const RealType rho=1000.f;              //[kg/m3]
-    const RealType ny=1e-6f;                //[m2/s]
+    const RealType ny=1e-5f;                //[m2/s]
 
-    const RealType ux=1e-5f;                //[m/s] // 0.01 ok 0.1 fail
-    const RealType ux_guess=4e-5f;          //[m/s]
+    const RealType ux=0.01f;                //[m/s] // 0.01 ok 0.1 fail
+    const RealType ux_guess=0.02f;          //[m/s]
     const RealType uy=0.f;                  //[m/s]
     const RealType u_max_lattice =0.09f;    //[0]
 
-    const RealType Fx = 0.0f;               //[kg/m2/s2]  <- force density (3rd dimension in 2D is equal to 1)
-    const RealType Fy = 0.0f;               //[kg/m2/s2]  <- force density (3rd dimension in 2D is equal to 1)
+    const RealType time =100.f;             //[s]
 
-    const RealType time =10000000.f;         //[s]
-    //const RealType plot_every=0.f;           //[s] rewritten on line 86
-
-    const int plot_every_it = 5000;
-    const int err_every_it = 1000;
+    const int plot_every = 1.f;             //[s]
 
     int iterations;
-
-    bool run_simulation = true;
-    
     
     Mesher<RealType, DeviceTypeHost > mesh_rectangle(Ny,Nx);   
 
-    //objects !! pristup od 0 !! horní index o 1 mensi
+    //objects
 
-    Obj_rectangle lower_wall( -1.f, Nx , -1.f, -1.f);
-    Obj_rectangle symmetry( 0.f, Nx-1 , 0.f, 0.f);
-    Obj_rectangle upper_wall( -1.f, Nx, Ny , Ny );
+    Obj_rectangle lower_wall( -1, Nx , -1, -1);
+    Obj_rectangle symmetry( 0, Nx-1 , 0, 0);
+    Obj_rectangle upper_wall( -1, Nx, Ny , Ny );
     Obj_rectangle front_wall(-1, -1, 0, Ny-1 );
     Obj_rectangle back_wall(Nx , Nx, 0, Ny-1);
     Obj_rectangle inlet(0, 0, 0, Ny-1 );
@@ -85,16 +80,12 @@ int main()
     //non-dimensionalize
     solver.convert_to_lattice(L, ux_guess, rho, ny, u_max_lattice);
 
-    
-    //plot_every_it = std::ceil(plot_every/solver.Ct_pub);
-    //std::cout<<"\nPlotting every " << plot_every_it << " iterations.\n";
+    int plot_every_it = std::ceil(plot_every/solver.Ct_pub);
+    std::cout<<"\nPlotting every " << plot_every_it << " iterations.\n";
     iterations = std::ceil(time/solver.Ct_pub);
     std::cout<<"\nCalculation will run for "<<iterations<<" iterations.\n";
 
-
-
-    
-    solver.initialization_eq(rho, ux/2, uy, Fx, Fy, 0);
+    solver.initialization_eq(rho, ux, uy, 0.f, 0.f, 0.f);
 
     solver.output_VTK_lattice();
     solver.output_VTK(0,plot_every_it);
@@ -111,23 +102,18 @@ int main()
     Timer timer_output;
 
     Logger logger(50, std::cout);
-
     timer_loop.start();
 
 
     int k = 0;
-    while(solver.err>=10e-4)
+    while(k<=iterations)
     {
         k++;
-        /*timer_postpro.start();
-        solver.omegaLES();
-        timer_postpro.stop();*/
+
         
         timer_collision.start();
         solver.collision_SRT();
         timer_collision.stop();
-
-
 
         timer_streaming.start();
         solver.streaming();
@@ -170,22 +156,31 @@ int main()
         }
     }
 
+    solver.output_VTK(k,plot_every_it);
+
     timer_loop.stop();
     
     logger.writeHeader("Timing of sections");
-    //logger.writeSystemInformation(true);
+    logger.writeSystemInformation(true);
+    logger.writeHeader("Loop");
     timer_loop.writeLog( logger, 0 );
     logger.writeSeparator();
+    logger.writeHeader("Collision");
     timer_collision.writeLog( logger, 0 );
     logger.writeSeparator();
+    logger.writeHeader("Streaming");
     timer_streaming.writeLog( logger, 0 );
     logger.writeSeparator();
+    logger.writeHeader("Boundary Conditions");
     timer_bounceback.writeLog( logger, 0 );
     logger.writeSeparator();
+    logger.writeHeader("Moments");
     timer_postpro.writeLog( logger, 0 );
     logger.writeSeparator();
+    logger.writeHeader("Error Calculation");
     timer_err.writeLog( logger, 0 );
     logger.writeSeparator();
+    logger.writeHeader("Output");
     timer_output.writeLog( logger, 0 );
 
 

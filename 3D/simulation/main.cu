@@ -3,12 +3,14 @@
 #include <TNL/Timer.h>
 #include <TNL/Logger.h>
 
-#include "src/geometry/geometryMesherBoundary.h"
-#include "src/geometry/geometryObjectCuboid.h"
-#include "src/solvers/SolverTurbulentLES.h"
 #include "src/traits/LBMTraits.h"
+
+#include "src/geometry/geometryMesherBoundary.h"
+#include "src/solvers/SolverTurbulentLES.h"
+
 #include "src/postprocesors/outputerVTK.h"
 #include "src/postprocesors/outputerMesh.h"
+#include "src/postprocesors/outputerStats.h"
 
 #include "src/solvers/models/D3Q27/D3Q27.h"
 #include "src/solvers/models/D3Q19/D3Q19.h"
@@ -38,23 +40,19 @@ int main() {
 
     using Initialisation        = InitializationEquilibriumConstVector<Model>;
     using Collision             = CollisionCumD3Q27Turbulent2015<Model>;
-    using Streaming             = StreamingAB<Model>;
+    using Streaming             = StreamingABpush<Model>;
     using BounceBackWall        = BounceBackWallHalf<Model>;
     using Symmetry              = NoSymmetry<Model>;
     using Periodic              = Periodic<Model>;
 
     using Inlet                 = InletVelocityEquilibrium<Model>;
-    using Outlet                = OutletDensityInterpolated<Model>;
+    using Outlet                = OutletDensityInterpolatedOmegaD3Q27<Model>;
     using Moments               = MomentDensityVelocityN27<Model>;  // SAME AS MODEL NUMBER
     using Error                 = ErrorQuadratic<Model>;
     using Turbulence            = OmegaLES<Model>;
     using NonDim                = NonDimensiolnaliseFactorsVelocity<Model>;
     using TimeAvg               = MomentTimeAvg<Model>;
 
-
-    //initialize timers
-    Timer timerMeshingBoundary;
-    Logger logger(50, std::cout);
 
     //initialize methodical classes
     geometryMesherBoundary Mesher(Constants,
@@ -79,17 +77,6 @@ int main() {
 
 
     //------------------------DATA IN--------------------------//
-
-    //set simulation initialization
-    VectorType Init(35.f, 0.f, 0.f); //change to 1 in z
-    Constants->VelocityInit = Init;
-
-
-   /* //set meshing data
-    Constants->resolution_factor = 0.1;
-    Constants->additional_factor = 6;                              // at least 1 for additional wall around
-    Constants->point_outside = {2, 1000, 0};
-    Constants->file_name = "Fany.off";*/
 
 
     //set geometry objects -1 streaming from it | no-bounce back - INLET
@@ -117,7 +104,7 @@ int main() {
 
     VectorType NormalInlet(-1.f, 0.f, 0.f);
 
-    VectorType velocityInletUniform(46.78f, 0.f, 0.f);
+    VectorType velocityInletUniform(72.f, 0.f, 0.f);
 
     VectorType NormalOutlet(1.f, 0.f, 0.f);
 
@@ -125,43 +112,36 @@ int main() {
 
     VectorType NormalPeriodic2(0.f, 1.f, 0.f);
 
-    //inlet parabolic data
+    RealType meanVelocityInlet = 72.f;
 
-    d3 inletCenter = {-0.1f , 0.075, 0.06};
-    RealType inletDimX = 0.f;
-    RealType inletDimY = 0.15f;
-    RealType inletDimZ = 0.1f;
-    RealType meanVelocityInlet = 46.78f;       // 5
-
-    //dumping tau outlet data
-    Constants -> omegaDumpingLow = 0.f;
-    Constants -> omegaDumpingHigh = 0.05f; // tau(Re=1000) = 0.55 -> 0.2
-
+    //set simulation initialization
+    VectorType Init(60.f, 0.f, 0.f); //change to 1 in z
+    Constants->VelocityInit = Init;
 
     //set physical data
-    Constants->rho_fyz = 1.293f;                        //[kg/m3]     1000
-    Constants->ny_fyz = 2*10e-5f;                       //[m2/s]
-    Constants->u_guess_fyz = 4.f*meanVelocityInlet;     //[m/s]
-    Constants->Fx_fyz = 0.0f;                           //[kg/m3/s2]  <- force density
-    Constants->Fy_fyz = 0.0f;                           //[kg/m3/s2]  <- force density
-    Constants->Fz_fyz = 0.0f;                           //[kg/m3/s2]  <- force density
-    Constants->conversion_factor_fyz = 1.0f;            // convert to m
+    Constants->conversion_factor_fyz = 1.0f;            //convert to m
+    Constants->rho_fyz = 1.293f;                        //[kg/m3]
+    Constants->ny_fyz = 2e-5f;                      	//[m2/s]
+    Constants->u_guess_fyz = 5.f*meanVelocityInlet;     //[m/s]
+    Constants->U_inf = meanVelocityInlet;
+    Constants -> omegaDumpingLow = 0.f;
+    Constants -> omegaDumpingHigh = 0.004f;		//dumping tau outlet data
 
     //set lattice data
-
-    Constants->U_lb = 0.09f;                  // max 0.1 (Book suggests max 0.2)
+    Constants->U_lb = 0.09f;                  			// max 0.1
 
     // set simulation parameters
 
-    Constants->time = 0.001f;                      //[s]
-    Constants->plot_every = 0.001f;               //[s]
-    Constants->err_every = 0.0001f;              //[s]
-    Constants->iterationsMomentAvg = 10000;      //[1]
+    Constants->time = 0.1f;                      		//[s]
+    Constants->plot_every = 0.1f;               		//[s]
+    Constants->err_every = 0.0001f;              		//[s]
+    Constants->MomentAvgStart = 0.08f;      		        //[s]
+    Constants->MomentAvg_every = 0.02f;      			//[s]
 
     // set sampling parameters
-    Constants->probe_every_it = 1;
     VectorType Probe(0.32f, 0.004f, 0.05f);
-    Constants->probe_iterations = 30000;
+    Constants->probe_every_it = 1;
+    Constants->probe_iterations = 1e4;
     Constants->ProbeLocation = Probe;
 
     //----------------------LOADING MESH------------------------------//
@@ -170,24 +150,16 @@ int main() {
 
     //----------------------MESHING GEOMETRY--------------------------//
 
-    timerMeshingBoundary.start();
-        Mesher.meshingBoundaryWall(0);
-        //Mesher.meshingBoundaryConditionInletParaboloidRectangle( cuboidInlet, inletCenter, inletDimX, inletDimY, inletDimZ, NormalInlet, meanVelocityInlet, 1 );
 
+    Mesher.meshingBoundaryWall(0);
 
-        Mesher.meshingBoundaryConditionPeriodic(cuboidPeriodic1,NormalPeriodic1, 16, 1);
-        Mesher.meshingBoundaryConditionPeriodic(cuboidPeriodic2,NormalPeriodic2, 1, 1);
+    Mesher.meshingBoundaryConditionPeriodic(cuboidPeriodic1,NormalPeriodic1, 16, 1);
+    Mesher.meshingBoundaryConditionPeriodic(cuboidPeriodic2,NormalPeriodic2, 1, 1);
+    Mesher.meshingBoundaryConditionInletUniform(cuboidInlet, NormalInlet, velocityInletUniform,0);
+    Mesher.meshingBoundaryConditionOutlet(cuboidOutlet, NormalOutlet, Constants->rho_fyz,1);
 
+    Mesher.arrayTransfer(1);
 
-        Mesher.meshingBoundaryConditionInletUniform(cuboidInlet, NormalInlet, velocityInletUniform,0);
-        Mesher.meshingBoundaryConditionOutlet(cuboidOutlet, NormalOutlet, Constants->rho_fyz,1);
-
-        Mesher.compileBoundaryArrayWall(1);
-        Mesher.compileBoundaryArrayInlets(1);
-        Mesher.compileBoundaryArrayPeriodic(1);
-        Mesher.compileBoundaryArrayOutlets(1);
-        Mesher.arrayTransfer(1);
-    timerMeshingBoundary.stop();
 
 
     //----------------------MESHING OUTPUT--------------------------//
@@ -204,40 +176,14 @@ int main() {
     Solver.initializeSimulation(1);
 
     if(runSim) {
+
+
         Solver.runSimulation();
     }
 
     //----------------------TIMERS OUTPUT--------------------------//
 
-
-    logger.writeHeader("Timing of sections 1) Whole loop");
-    //logger.writeSystemInformation(true);
-    Solver.timer_loop.writeLog(logger, 0);
-    logger.writeSeparator();
-    logger.writeHeader("Collision");
-    Solver.timer_collision.writeLog(logger, 0);
-    logger.writeSeparator();
-    logger.writeHeader("Streaming");
-    Solver.timer_streaming.writeLog(logger, 0);
-    logger.writeSeparator();
-    logger.writeHeader("Bounce back");
-    Solver.timer_bounceback.writeLog(logger, 0);
-    logger.writeSeparator();
-    logger.writeHeader("Moments Update");
-    Solver.timer_momentsUpdate.writeLog(logger, 0);
-    logger.writeSeparator();
-    logger.writeHeader("Error Calculation");
-    Solver.timer_err.writeLog(logger, 0);
-    logger.writeSeparator();
-    logger.writeHeader("Writting Output");
-    Solver.timer_output.writeLog(logger, 0);
-    logger.writeSeparator();
-    logger.writeHeader("TimeDumping");
-    Solver.timer_dumping.writeLog(logger, 0);
-    logger.writeSeparator();
-    logger.writeHeader("Time Averaging");
-    Solver.timer_timeAvg.writeLog(logger, 0);
-
+	outputerStats::Statistics(Solver, Constants, 0, 1);
 
     return 0;
 }

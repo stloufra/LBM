@@ -23,9 +23,8 @@ clean:
 run:
 	make clean
 	make
-	##./preprocess
+	mkdir -p results
 	./main
-	
 
 $(TARGETS): % : %.o
 	$(CXX) $(LDFLAGS) -o $@ $< $(LDLIBS)

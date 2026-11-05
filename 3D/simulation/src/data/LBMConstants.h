@@ -28,8 +28,9 @@ struct LBMConstants {
 
     int inlet_num;                  //[1]
     int outlet_num;                 //[1]
-    int symmetry_num;                   //[1]
-    int periodic_num;                   //[1]
+    int symmetry_num;               //[1]
+    int periodic_num;               //[1]
+    int periodicDP_num;             //[1]
     int wall_num;                   //[1]
 
 
@@ -40,9 +41,9 @@ struct LBMConstants {
     RealType rho_fyz;               //[kg/m3]
     RealType Re;                    //[1]
 
-    RealType Fx_fyz;                //[kg/m3/s2]
-    RealType Fy_fyz;                //[kg/m3/s2]
-    RealType Fz_fyz;                //[kg/m3/s2]
+    RealType Fx_fyz = 0.f ;                //[kg/m3/s2]
+    RealType Fy_fyz = 0.f ;                //[kg/m3/s2]
+    RealType Fz_fyz = 0.f ;                //[kg/m3/s2]
     RealType conversion_factor_fyz; //[1]  converting to meters 1/1000 mm; 1/100 cm; etc.
 
     //lattice
@@ -54,6 +55,7 @@ struct LBMConstants {
     RealType g;
 
     RealType U_lb;                  //[1]
+    RealType U_inf = 0.f;                  //[1]
     RealType u_max;
     RealType Cl;
     RealType Ct;
@@ -79,19 +81,21 @@ struct LBMConstants {
 
 
     RealType time;                      //[s]
-    RealType plot_every = -1.f;             //[s]
+    RealType plot_every = -1.f;         //[s]
+    RealType err_every = -1.f;          //[s]
+    RealType MomentAvg_every = -1.f;     //[s]
+    RealType MomentAvgStart = -1.f;     //[s]
 
-    RealType err_every = -1.f;              //[s]
     int plot_every_it = -1;
-
     int err_every_it = -1;
-    int iterations;
 
-    int iterationsMomentAvg;        // number of iteration to be time averaged
+    int iterationsMomentAvg = -1;        // number of iteration to be time averaged
+    int iterationsMomentAvgStart= -1;   // number of iteration to be time averaged
 
     int TimeAvgCounter = 0;         // number of iterations to be time averaged counter
     bool timeAveraged;              // if true, already time averaged
 
+    int iterations;
     int probe_every_it = -1.f;             // number of iterations for probe sampling
     int probe_iterations = -1.f;
     VectorType ProbeLocation = (0.f, 0.f, 0.f); //default
@@ -100,7 +104,7 @@ struct LBMConstants {
 
 
     int Nvel;
-    const RealType cs = 1.f/sqrt(3.f);
+    const RealType cs = 0.57735f; //1.f/sqrt(3.f);
     const RealType cs2 = 1.f/3.f;
     const RealType cs4 = 1.f/9.f;
 
