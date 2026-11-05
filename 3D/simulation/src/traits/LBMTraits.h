@@ -44,7 +44,12 @@ struct boundaryConditionOutlet {
     Vector normal;
     float density;
     bool regular;
+    unsigned int wallMask; // bit (dx+1)*9+(dy+1)*3+(dz+1) set if that neighbour is real wall
 };
+
+__cuda_callable__ inline int neighbourBit(int dx, int dy, int dz) {
+    return (dx + 1) * 9 + (dy + 1) * 3 + (dz + 1);
+}
 
 struct boundaryConditionSymmetry {
     Vertex vertex;

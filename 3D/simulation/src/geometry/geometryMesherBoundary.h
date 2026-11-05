@@ -506,8 +506,24 @@ public:
         Data->meshBoundaryOutletHost.setSizes(boundary_vector_outlet.size());
         Constants->outlet_num = boundary_vector_outlet.size();
 
+        // Halo cells behind periodic planes are solid in mesh but must not act as walls.
+        const int dimX = Constants->dimX_int, dimY = Constants->dimY_int;
+        auto linear = [=](int x, int y, int z) { return x + dimX * (y + dimY * z); };
+        std::vector<bool> periodicGhost(dimX * dimY * Constants->dimZ_int, false);
+        for (const auto& BC: boundary_vector_periodic) {
+            periodicGhost[linear(BC.vertex.x + (int) BC.normal.x(), BC.vertex.y + (int) BC.normal.y(), BC.vertex.z + (int) BC.normal.z())] = true;
+        }
+
         int j = 0;
         for (boundaryConditionOutlet BC: boundary_vector_outlet) {
+            BC.wallMask = 0;
+            for (int dx: {-1, 0, 1})
+                for (int dy: {-1, 0, 1})
+                    for (int dz: {-1, 0, 1}) {
+                        const int x = BC.vertex.x + dx, y = BC.vertex.y + dy, z = BC.vertex.z + dz;
+                        if (Data->meshFluidHost(x, y, z) == 0 && !periodicGhost[linear(x, y, z)])
+                            BC.wallMask |= 1u << neighbourBit(dx, dy, dz);
+                    }
             Data->meshBoundaryOutletHost[j] = BC;
             j += 1;
         }

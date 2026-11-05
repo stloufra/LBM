@@ -203,10 +203,11 @@ public:
 
             timer_bounceback.start();
                 BOUNCEBACKWALLTYPE::bounceBackWall(Data, Constants);
+                // Periodic first: outlet density correction needs complete populations on periodic planes.
+                PERIODICTYPE::periodic(Data, Constants);
                 INLETTYPE::inlet(Data, Constants);
                 OUTLETTYPE::outlet(Data, Constants);
                 SYMMETRYTYPE::symmetry(Data, Constants);
-                PERIODICTYPE::periodic(Data, Constants);
             timer_bounceback.stop();
 
             timer_momentsUpdate.start();

@@ -22,7 +22,6 @@ struct OutletDensityInterpolated {
     static void outlet(LBMDataPointer &Data, LBMConstantsPointer &Constants) {
 
         auto outlet_view = Data->meshBoundaryOutlet.getView();
-        auto mesh_view = Data->meshFluid.getView();
 
         auto df_view = Data->df.getView();
         auto df_post_view = Data->df_post.getView();
@@ -63,7 +62,7 @@ struct OutletDensityInterpolated {
                 if (cn < 0) {
                     df_view(i, j, k, vel) = cs * df_post_view(i - nx, j - ny, k - nz, vel) + (1 - cs) * df_post_view(i, j, k, vel);
                 }
-                else if (!bc.regular && mesh_view(i - MD.c[vel][0], j - MD.c[vel][1], k - MD.c[vel][2]) == 0) {
+                else if (bc.wallMask & (1u << neighbourBit(-MD.c[vel][0], -MD.c[vel][1], -MD.c[vel][2]))) {
                     df_view(i, j, k, vel) = df_post_view(i, j, k, MD.c_rev[vel]);
                 }
             }
