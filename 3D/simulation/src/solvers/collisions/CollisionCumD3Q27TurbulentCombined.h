@@ -70,6 +70,14 @@ struct CollisionCumD3Q27TurbulentCombined {
             RealType f_pmm = df_view(i, j, k, 23);
             RealType f_mpp = df_view(i, j, k, 24);
 
+            // Rest population closes mass after collision. Sums in double: fp32 sums round with consistent sign.
+            auto nonRestSum = [&]() {
+                return double(f_pzz) + f_mzz + f_zpz + f_zmz + f_zzp + f_zzm
+                     + f_ppz + f_mmz + f_pmz + f_mpz + f_pzp + f_mzm + f_pzm + f_mzp + f_zpp + f_zmm + f_zpm + f_zmp
+                     + f_ppp + f_mmm + f_ppm + f_mmp + f_pmp + f_mpm + f_pmm + f_mpp;
+            };
+            const double mass = f_zzz + nonRestSum();
+
             const RealType ux = u_view(i, j, k).x();
             const RealType uy = u_view(i, j, k).y();
             const RealType uz = u_view(i, j, k).z();
@@ -541,6 +549,8 @@ struct CollisionCumD3Q27TurbulentCombined {
             f_pzp = (ks_pz0 * (uz * uz + uz) + ks_pz1 * (2.f * uz + 1.f) + ks_pz2) * 0.5f;
             f_ppp = (ks_pp0 * (uz * uz + uz) + ks_pp1 * (2.f * uz + 1.f) + ks_pp2) * 0.5f;
 
+            f_zzz = RealType(mass - nonRestSum());
+
             // back to df_post
             df_post_view(i, j, k, 0) = f_zzz; // 0
             df_post_view(i, j, k, 1) = f_pzz; // 1
@@ -614,6 +624,14 @@ struct CollisionCumD3Q27TurbulentCombined {
             RealType f_mpm = df_view(i, j, k, 19);
             RealType f_pmm = df_view(i, j, k, 23);
             RealType f_mpp = df_view(i, j, k, 24);
+
+            // Rest population closes mass after collision. Sums in double: fp32 sums round with consistent sign.
+            auto nonRestSum = [&]() {
+                return double(f_pzz) + f_mzz + f_zpz + f_zmz + f_zzp + f_zzm
+                     + f_ppz + f_mmz + f_pmz + f_mpz + f_pzp + f_mzm + f_pzm + f_mzp + f_zpp + f_zmm + f_zpm + f_zmp
+                     + f_ppp + f_mmm + f_ppm + f_mmp + f_pmp + f_mpm + f_pmm + f_mpp;
+            };
+            const double mass = f_zzz + nonRestSum();
 
             const RealType ux = u_view(i, j, k).x();
             const RealType uy = u_view(i, j, k).y();
@@ -1028,6 +1046,8 @@ struct CollisionCumD3Q27TurbulentCombined {
             f_pmp = (ks_pm0 * (uz * uz + uz) + ks_pm1 * (2.f * uz + 1.f) + ks_pm2) * 0.5f;
             f_pzp = (ks_pz0 * (uz * uz + uz) + ks_pz1 * (2.f * uz + 1.f) + ks_pz2) * 0.5f;
             f_ppp = (ks_pp0 * (uz * uz + uz) + ks_pp1 * (2.f * uz + 1.f) + ks_pp2) * 0.5f;
+
+            f_zzz = RealType(mass - nonRestSum());
 
             // back to df_post
             df_post_view(i, j, k, 0) = f_zzz; // 0

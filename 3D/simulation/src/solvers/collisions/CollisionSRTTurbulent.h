@@ -62,18 +62,19 @@ struct CollisionSRTTurbulent
                 return;
 
             const RealType omg = omega_view(i.x(), i.y(), i.z());
-            const RealType rho = rho_view(i.x(), i.y(), i.z());
 
-            // Rest population closes mass: rounded weights would otherwise leak it every step.
-            RealType feqSum = 0;
+            // Rest population closes mass. Sums in double: fp32 sums round with consistent sign.
+            double mass = df_view(i.x(), i.y(), i.z(), 0);
+            double postNonRest = 0;
             for (int vel = 1; vel < Nvel; vel++) {
                 const RealType feq = f_equilibrium(i.x(), i.y(), i.z(), vel);
                 const RealType df = df_view(i.x(), i.y(), i.z(), vel);
-                feqSum += feq;
-                df_post_view(i.x(), i.y(), i.z(), vel) = df - (df - feq) * omg;
+                const RealType post = df - (df - feq) * omg;
+                mass += df;
+                postNonRest += post;
+                df_post_view(i.x(), i.y(), i.z(), vel) = post;
             }
-            const RealType df0 = df_view(i.x(), i.y(), i.z(), 0);
-            df_post_view(i.x(), i.y(), i.z(), 0) = df0 - (df0 - (rho - feqSum)) * omg;
+            df_post_view(i.x(), i.y(), i.z(), 0) = RealType(mass - postNonRest);
         };
 
 

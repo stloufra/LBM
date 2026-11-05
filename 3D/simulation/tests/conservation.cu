@@ -140,7 +140,7 @@ static int run(const Case& c, float tau, int steps)
     }
 
     const double drift = (mass - mass0) / mass0;
-    // fp32 transforms round with consistent sign, so drift grows linearly in steps.
+    // fp32 summation rounding accumulates per step; linear bound is loose on purpose.
     const double tolerance = std::is_same_v<LBMTraits::RealType, double> ? 1e-10 : 1e-8 * steps;
     // Open domain: mass not conserved; velocity inlet carries pressure drop, so only require bounded density.
     const bool massOk = c.openX ? maxDensityDeviation < 0.25 : std::abs(drift) < tolerance;
