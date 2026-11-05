@@ -71,7 +71,11 @@ public:
 
     using RealType = float;
 
+#ifdef __CUDACC__
     using DeviceType = TNL::Devices::Cuda;
+#else
+    using DeviceType = TNL::Devices::Host;
+#endif
     using DeviceTypeHost = TNL::Devices::Host;
 
     using VectorType = TNL::Containers::StaticVector< 3, RealType >;

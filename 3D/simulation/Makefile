@@ -10,14 +10,20 @@ CUDA_SOURCES := $(wildcard *.cu)
 CUDA_TARGETS := $(CUDA_SOURCES:%.cu=%)
 
 ## targets definitions follow
-.PHONY: all host cuda
+.PHONY: all host cuda host-sim
 all: host cuda
 host: $(TARGETS)
 cuda: $(CUDA_TARGETS)
 
+# CUDA sources built for TNL Host backend (OpenMP), no nvcc needed.
+host-sim: $(CUDA_SOURCES:%.cu=%-host)
+
+%-host: %.cu
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -x c++ -o $@ $< $(LDLIBS)
+
 .PHONY: clean
 clean:
-	rm -f *.d *.o *.cuo results/*.vtk results/*.csv $(TARGETS) $(CUDA_TARGETS)
+	rm -f *.d *.o *.cuo results/*.vtk results/*.csv $(TARGETS) $(CUDA_TARGETS) *-host
 
 .PHONY: run
 run:

@@ -1,5 +1,5 @@
 # configure the include path(s) according to your TNL installation
-TNL_INCLUDE_DIRS := -I /home/stloufra/.local/include
+TNL_INCLUDE_DIRS ?= -I $(HOME)/.local/include
 CGAL_INCLUDE_DIRS := -I /usr/include/CGAL/include
 
 WITH_OPENMP := yes
@@ -10,7 +10,7 @@ WITH_CGAL := no
 # automatically by tnl-cuda-arch. This is done if CUDA_ARCH is set to "auto".
 # Otherwise, CUDA_ARCH has to be set manually to the desired CUDA architecture
 # number, e.g. 60, 61, etc.
-CUDA_ARCH := auto
+CUDA_ARCH ?= auto
 
 # compilers
 CXX := g++

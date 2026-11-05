@@ -18,9 +18,9 @@ struct ErrorQuadratic
 
     static void errorEvaluation(LBMDataPointer &Data, LBMConstantsPointer &Constants) {
 
-        auto uStatArr_view = Data->u.getStorageArray().getConstView();
-        auto uErrorStatArr_view = Data->u_error.getStorageArray().getConstView();
-        auto mesh_view = Data->meshFluid.getStorageArray().getConstView();
+        auto uStatArr_view = Data->u.getStorageArrayView().getConstView();
+        auto uErrorStatArr_view = Data->u_error.getStorageArrayView().getConstView();
+        auto mesh_view = Data->meshFluid.getStorageArrayView().getConstView();
 
         auto u_view = Data->u.getView();
         auto uError_view = Data->u_error.getView();

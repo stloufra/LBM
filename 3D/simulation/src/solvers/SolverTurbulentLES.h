@@ -167,7 +167,7 @@ public:
             HoCuView[2] = u_view(x,y,z).z();
             HoCuView[3] = rho_view(x,y,z);
         };
-        parallelFor< TNL::Devices::Cuda >( 0, 1, init );
+        parallelFor< DeviceType >( 0, 1, init );
 
         HolderHOST = HolderCUDA;
 
