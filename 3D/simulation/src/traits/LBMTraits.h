@@ -26,6 +26,10 @@ struct Normal {
 //    double ux, uy, uz;
 //};
 
+#ifndef LBM_REAL_TYPE
+#define LBM_REAL_TYPE float
+#endif
+
 using Vector = TNL::Containers::StaticVector< 3, float >;
 
 struct boundaryConditionInlet {
@@ -69,7 +73,7 @@ class LBMTraits {
 public:
 
 
-    using RealType = float;
+    using RealType = LBM_REAL_TYPE;
 
 #ifdef __CUDACC__
     using DeviceType = TNL::Devices::Cuda;

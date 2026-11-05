@@ -12,12 +12,15 @@ WITH_CGAL := no
 # number, e.g. 60, 61, etc.
 CUDA_ARCH ?= auto
 
+# float | double
+REAL_TYPE ?= float
+
 # compilers
 CXX := g++
 CUDA_CXX := nvcc
 
 # host compiler flags
-CXXFLAGS := -std=c++20  $(TNL_INCLUDE_DIRS) $(CGAL_INCLUDE_DIRS) -w
+CXXFLAGS := -std=c++20  $(TNL_INCLUDE_DIRS) $(CGAL_INCLUDE_DIRS) -w -DLBM_REAL_TYPE=$(REAL_TYPE)
 
 ifeq ($(WITH_DEBUG),yes)
     CXXFLAGS += -O0 -g
@@ -26,7 +29,7 @@ else
 endif
 
 # CUDA compiler flags
-CUDA_CXXFLAGS := -std=c++20 --expt-relaxed-constexpr --expt-extended-lambda $(TNL_INCLUDE_DIRS) -diag-suppress 174
+CUDA_CXXFLAGS := -std=c++20 --expt-relaxed-constexpr --expt-extended-lambda $(TNL_INCLUDE_DIRS) -diag-suppress 174 -DLBM_REAL_TYPE=$(REAL_TYPE)
 
 ifeq ($(WITH_DEBUG),yes)
     CUDA_CXXFLAGS += -DHAVE_CUDA
