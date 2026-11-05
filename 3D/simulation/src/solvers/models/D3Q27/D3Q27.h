@@ -120,7 +120,7 @@ struct D3Q27
     const int c_rev[27] = {0, 2, 1, 4, 3, 6,
                                       5, 8, 7, 10, 9, 12, 11,
                                       14, 13, 16, 15, 18, 17,
-                                      20, 21, 22, 21, 24, 23,
+                                      20, 19, 22, 21, 24, 23,
                                       26, 25}; // (reverse velocities are i+1 for i odd and i-1 for i even)
 
     const int c_sym_x[27] = {
