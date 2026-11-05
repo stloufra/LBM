@@ -29,6 +29,7 @@ test-cuda: tests/conservation
 
 .PHONY: clean
 clean:
+	rm -rf results/conservation
 	rm -f *.d *.o *.cuo results/*.vtk results/*.csv $(TARGETS) $(CUDA_TARGETS) *-host tests/*-host tests/*.cuo tests/conservation
 
 .PHONY: run

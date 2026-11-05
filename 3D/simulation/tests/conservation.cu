@@ -1,8 +1,14 @@
 // Mass conservation + periodic consistency on closed geometries with edges and corners.
-// Build: make -C tests (host) or make -C tests cuda.
+// Usage: conservation [steps] [--dump DIR]; dump writes per-case CSV history and VTK checkpoints.
+#include <algorithm>
+#include <array>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <string>
+#include <vector>
 
 #include "../src/geometry/geometryMesherBoundary.h"
 #include "../src/solvers/SolverTurbulentLES.h"
@@ -17,6 +23,14 @@ struct Case {
     bool periodicY;
     bool openX = false;
 };
+
+static std::string slug(const std::string& name)
+{
+    std::string s;
+    for (const char ch : name)
+        s += std::isalnum((unsigned char) ch) ? (char) std::tolower((unsigned char) ch) : '_';
+    return s;
+}
 
 static void buildMesh(LBMDataPointer& Data, LBMConstantsPointer& Constants, const Case& c)
 {
@@ -39,7 +53,7 @@ static void buildMesh(LBMDataPointer& Data, LBMConstantsPointer& Constants, cons
 }
 
 template<typename Collision, typename Turbulence, typename PeriodicBC>
-static int run(const Case& c, float tau, int steps)
+static int run(const Case& c, float tau, int steps, const std::filesystem::path& dumpDir)
 {
     LBMConstantsPointer Constants;
     LBMDataPointer Data;
@@ -117,9 +131,60 @@ static int run(const Case& c, float tau, int steps)
                 }
     };
 
+    // Cell data on voxels centred at integer lattice indices.
+    auto writeVTK = [&](int step) {
+        Model MD;
+        std::vector<std::array<double, 4>> moments(nx * ny * nz);
+        for (int k = 0; k < nz; k++)
+            for (int j = 0; j < ny; j++)
+                for (int i = 0; i < nx; i++) {
+                    auto& m = moments[(k * ny + j) * nx + i];
+                    m = {0, 0, 0, 0};
+                    if (Data->meshFluidHost(i, j, k) == 0)
+                        continue;
+                    for (int q = 0; q < Constants->Nvel; q++) {
+                        const double f = dfHost(i, j, k, q);
+                        m[0] += f;
+                        for (int d = 0; d < 3; d++)
+                            m[d + 1] += MD.c[q][d] * f;
+                    }
+                    for (int d = 1; d < 4; d++)
+                        m[d] /= m[0];
+                    m[0] -= 1;
+                }
+
+        std::ofstream out(dumpDir / (slug(c.name) + "_" + std::to_string(step) + ".vtk"));
+        out << "# vtk DataFile Version 3.0\n" << c.name << " step " << step << "\nASCII\nDATASET STRUCTURED_POINTS\n"
+            << "DIMENSIONS " << nx + 1 << ' ' << ny + 1 << ' ' << nz + 1 << "\nORIGIN -0.5 -0.5 -0.5\nSPACING 1 1 1\n"
+            << "CELL_DATA " << nx * ny * nz << "\nSCALARS mesh int 1\nLOOKUP_TABLE default\n";
+        for (int k = 0; k < nz; k++)
+            for (int j = 0; j < ny; j++)
+                for (int i = 0; i < nx; i++)
+                    out << Data->meshFluidHost(i, j, k) << '\n';
+        out << "SCALARS rho_minus_1 double 1\nLOOKUP_TABLE default\n";
+        for (const auto& m : moments)
+            out << m[0] << '\n';
+        out << "VECTORS u double\n";
+        for (const auto& m : moments)
+            out << m[1] << ' ' << m[2] << ' ' << m[3] << '\n';
+    };
+
+    const bool dump = !dumpDir.empty();
+    std::ofstream history;
+    if (dump) {
+        history.open(dumpDir / (slug(c.name) + ".csv"));
+        history << "# name: " << c.name << "\n# open: " << c.openX << "\nstep,mass_drift,max_density_deviation,periodic_mismatch\n";
+    }
+
     double mass0, mismatch;
     inspect(mass0, mismatch);
+    if (dump) {
+        history << 0 << ',' << 0 << ',' << maxDensityDeviation << ',' << mismatch << '\n';
+        writeVTK(0);
+    }
 
+    const int checkpointEvery = std::max(1, steps / 4);
+    const int sampleEvery = dump ? std::max(1, steps / 200) : checkpointEvery;
     bool finite = true;
     double mass = mass0;
     for (int step = 1; step <= steps; step++) {
@@ -131,12 +196,18 @@ static int run(const Case& c, float tau, int steps)
         InletVelocityEquilibrium<Model>::inlet(Data, Constants);
         OutletDensityInterpolated<Model>::outlet(Data, Constants);
         MomentDensityVelocityN27<Model>::momentUpdate(Data, Constants);
-        if (step % (steps / 4) == 0 || step == steps) {
-            inspect(mass, mismatch);
-            finite = std::isfinite(mass);
-            if (!finite)
-                break;
+        const bool checkpoint = step % checkpointEvery == 0 || step == steps;
+        if (!checkpoint && step % sampleEvery != 0)
+            continue;
+        inspect(mass, mismatch);
+        finite = std::isfinite(mass);
+        if (dump) {
+            history << step << ',' << (mass - mass0) / mass0 << ',' << maxDensityDeviation << ',' << mismatch << '\n';
+            if (checkpoint || !finite)
+                writeVTK(step);
         }
+        if (!finite)
+            break;
     }
 
     const double drift = (mass - mass0) / mass0;
@@ -154,16 +225,27 @@ static int run(const Case& c, float tau, int steps)
 
 int main(int argc, char** argv)
 {
-    const int steps = argc > 1 ? std::stoi(argv[1]) : 2000;
+    int steps = 2000;
+    std::filesystem::path dumpDir;
+    for (int a = 1; a < argc; a++) {
+        const std::string arg = argv[a];
+        if (arg == "--dump" && a + 1 < argc)
+            dumpDir = argv[++a];
+        else
+            steps = std::stoi(arg);
+    }
+    if (!dumpDir.empty())
+        std::filesystem::create_directories(dumpDir);
+
     const Case box{"box+step D3Q27", 32, 24, 20, false};
     const Case slab{"periodic-y slab+step D3Q27", 40, 10, 20, true};
 
     int failures = 0;
-    failures += run<CollisionSRTTurbulent<Model>, OmegaNo<Model>, NoPeriodic<Model>>({box.name + " SRT", box.nx, box.ny, box.nz, false}, 0.6f, steps);
-    failures += run<CollisionCumD3Q27Turbulent2015<Model>, OmegaLES<Model>, NoPeriodic<Model>>({box.name + " CUM+LES", box.nx, box.ny, box.nz, false}, 0.5005f, steps);
-    failures += run<CollisionSRTTurbulent<Model>, OmegaNo<Model>, Periodic<Model>>({slab.name + " SRT", slab.nx, slab.ny, slab.nz, true}, 0.6f, steps);
-    failures += run<CollisionCumD3Q27Turbulent2015<Model>, OmegaLES<Model>, Periodic<Model>>({slab.name + " CUM+LES", slab.nx, slab.ny, slab.nz, true}, 0.5005f, steps);
+    failures += run<CollisionSRTTurbulent<Model>, OmegaNo<Model>, NoPeriodic<Model>>({box.name + " SRT", box.nx, box.ny, box.nz, false}, 0.6f, steps, dumpDir);
+    failures += run<CollisionCumD3Q27Turbulent2015<Model>, OmegaLES<Model>, NoPeriodic<Model>>({box.name + " CUM+LES", box.nx, box.ny, box.nz, false}, 0.5005f, steps, dumpDir);
+    failures += run<CollisionSRTTurbulent<Model>, OmegaNo<Model>, Periodic<Model>>({slab.name + " SRT", slab.nx, slab.ny, slab.nz, true}, 0.6f, steps, dumpDir);
+    failures += run<CollisionCumD3Q27Turbulent2015<Model>, OmegaLES<Model>, Periodic<Model>>({slab.name + " CUM+LES", slab.nx, slab.ny, slab.nz, true}, 0.5005f, steps, dumpDir);
     const Case channel{"channel inlet/outlet+periodic-y CUM+LES", 64, 10, 24, true, true};
-    failures += run<CollisionCumD3Q27Turbulent2015<Model>, OmegaLES<Model>, Periodic<Model>>(channel, 0.5005f, 4 * steps);
+    failures += run<CollisionCumD3Q27Turbulent2015<Model>, OmegaLES<Model>, Periodic<Model>>(channel, 0.5005f, 4 * steps, dumpDir);
     return failures;
 }
