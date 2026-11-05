@@ -58,20 +58,22 @@ struct CollisionSRTLaminar
         const TNL::Containers::StaticArray<3, int> &i )mutable
         {
 
-            if (mesh_view(i.x(), i.y(), i.z()) != 0) {
+            if (mesh_view(i.x(), i.y(), i.z()) == 0)
+                return;
 
-                for (int vel = 0; vel < Nvel; vel++) {
+            const RealType omg = omega;
+            const RealType rho = rho_view(i.x(), i.y(), i.z());
 
-                    df_post_view(i.x(), i.y(), i.z(), vel) =
-                            df_view(i.x(), i.y(), i.z(), vel) -
-                            (df_view(i.x(), i.y(), i.z(), vel) - f_equilibrium(i.x(), i.y(), i.z(), vel)) * omega;
-                }
+            // Rest population closes mass: rounded weights would otherwise leak it every step.
+            RealType feqSum = 0;
+            for (int vel = 1; vel < Nvel; vel++) {
+                const RealType feq = f_equilibrium(i.x(), i.y(), i.z(), vel);
+                const RealType df = df_view(i.x(), i.y(), i.z(), vel);
+                feqSum += feq;
+                df_post_view(i.x(), i.y(), i.z(), vel) = df - (df - feq) * omg;
             }
-            /*else {
-                for (int vel = 0; vel < Nvel; vel++) {
-                    df_post_view(i.x(), i.y(), i.z(), vel) = 0;
-                }
-            }*/
+            const RealType df0 = df_view(i.x(), i.y(), i.z(), 0);
+            df_post_view(i.x(), i.y(), i.z(), 0) = df0 - (df0 - (rho - feqSum)) * omg;
         };
 
 
