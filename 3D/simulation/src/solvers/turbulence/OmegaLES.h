@@ -116,15 +116,13 @@ struct OmegaLES {
 
                 RealType rho_inv = 1.0f / rho;
                 RealType tau_sq = tau * tau;
-                RealType CLES_term = 18.f * CLES * rho_inv;
+                // Smagorinsky, Hou et al. 1996: tau_t from |Pi_neq|, filter width = 1 lattice unit.
+                RealType CLES_term = 18.f * sqrt(2.f) * CLES * CLES * rho_inv;
 
                 PI = sqrt(PI);
 
-                // Compute tauLES with one square root
                 tauLES = tau * 0.5f + 0.5f * sqrt(tau_sq + CLES_term * PI);
 
-                //tauLES = tau * 0.5f +
-                //         sqrt(tau * tau + 18.f * CLES / (rho) * sqrt(PI)) * 0.5f;
 
                 omega_view(i.x(), i.y(), i.z()) = 1.f / tauLES;
             }
