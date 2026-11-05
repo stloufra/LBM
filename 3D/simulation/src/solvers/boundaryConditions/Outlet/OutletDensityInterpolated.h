@@ -8,7 +8,7 @@
 #include "../../../traits/LBMTraits.h"
 
 // Convective outflow for incoming populations, advected at cs from interior neighbour,
-// then density shifted to prescribed value keeping local velocity. Normal must be axis aligned.
+// then density shifted to prescribed value keeping local outflow velocity. Normal must be axis aligned.
 template<typename MODELDATA>
 struct OutletDensityInterpolated {
     using RealType = LBMTraits::RealType;
@@ -79,8 +79,13 @@ struct OutletDensityInterpolated {
             const RealType uy = jy / rho;
             const RealType uz = jz / rho;
 
+            // Backflow stabilisation: target state drops inflowing normal velocity, else outlet pumps mass in.
+            const RealType backflow = TNL::min(ux * nx + uy * ny + uz * nz, RealType(0));
+            const RealType tx = ux - backflow * nx;
+            const RealType ty = uy - backflow * ny;
+            const RealType tz = uz - backflow * nz;
             for (int vel = 0; vel < Nvel; vel++) {
-                df_view(i, j, k, vel) += f_equilibrium(ux, uy, uz, bc.density, vel) - f_equilibrium(ux, uy, uz, rho, vel);
+                df_view(i, j, k, vel) += f_equilibrium(tx, ty, tz, bc.density, vel) - f_equilibrium(ux, uy, uz, rho, vel);
             }
         };
 
