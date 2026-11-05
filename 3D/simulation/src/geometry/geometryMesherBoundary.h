@@ -461,7 +461,7 @@ public:
                             }
                         }
 
-                        if (Data->meshFluidHost(i, j, k) >2) { //TODO: before 2
+                        if (Data->meshFluidHost(i, j, k) > 1) {
                             boundary_condition_wall.vertex = {i, j, k};
                             boundary_condition_wall.regular = 1;
 
