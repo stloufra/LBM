@@ -49,9 +49,6 @@ public:
                                               const Vector &velocity_in,
                                               bool verbose) {
 
-        if (velocity_in.x() == velocity_in.y() && velocity_in.x() == velocity_in.z()) {
-            throw std::invalid_argument("Expected a 3D vector for velocity_in. If valid comment me.");
-        }
         // Function to fill the inlet velocities with uniform velocity profile.
         // So far supports only inlets which are perpendicular to one of the axis.
 
@@ -78,23 +75,20 @@ public:
                     d3 pnt_ask = {lookx, looky, lookz};
 
                     if (cuboid.isInside(pnt_ask) && Data->meshFluidHost(i, j, k) > 0) {
-                        if (neighboursFluidSearch(pnt_ask, 0)) {
+                        boundary_condition_inlet.normal = normal_out;
+                        boundary_condition_inlet.velocity = velocity_in;
+                        boundary_condition_inlet.vertex = {i, j, k};
 
-                            boundary_condition_inlet.normal = normal_out;
-                            boundary_condition_inlet.velocity = velocity_in;
-                            boundary_condition_inlet.vertex = {i, j, k};
-
-                            if (Data->meshFluidHost(i, j, k) > 10) { // count begins from +1
-                                boundary_condition_inlet.regular = 0;
-                            } else {
-                                boundary_condition_inlet.regular = 1;
-                            }
-
-                            Data->meshFluidHost(i, j, k) = cuboid.id; // - Data->meshFluidHost(i, j, k);
-
-                            boundary_vector_inlet.push_back(boundary_condition_inlet);
-                            num += 1;
+                        if (Data->meshFluidHost(i, j, k) > 10) { // count begins from +1
+                            boundary_condition_inlet.regular = 0;
+                        } else {
+                            boundary_condition_inlet.regular = 1;
                         }
+
+                        Data->meshFluidHost(i, j, k) = cuboid.id; // - Data->meshFluidHost(i, j, k);
+
+                        boundary_vector_inlet.push_back(boundary_condition_inlet);
+                        num += 1;
                     }
                 }
             }
@@ -428,9 +422,8 @@ public:
             }
         }
 
-        printf("\n My index is %d", abs(ii*(int)normal_out.x()) + abs(jj*(int)normal_out.y()) + abs(kk*(int)normal_out.z()));
-
         if (verbose) {
+            std::cout << "\nPeriodic plane index " << abs(ii*(int)normal_out.x()) + abs(jj*(int)normal_out.y()) + abs(kk*(int)normal_out.z());
             std::cout << "\nMeshed cuboid id " << cuboid.id << " as Periodic.\n";
             std::cout << "Boundary vertexes number: " << num << std::endl;
         }
@@ -630,45 +623,6 @@ public:
                 std::cout << "\n Trasfered Arrays From Host to Host.\n";
             }
         }
-    }
-
-    // HELPER FUNCTIONS
-
-    bool neighboursFluidSearch(d3 Point, int TypeSearched) {
-        int nx, ny, nz;
-
-        // Iterate through neighbors
-        for (int di = -1; di <= 1; ++di) {
-            for (int dj = -1; dj <= 1; ++dj) {
-                for (int dk = -1; dk <= 1; ++dk) {
-
-                    if (di == 0 && dj == 0 && dk == 0)  // Skip the central point
-                    {
-                        continue;
-                    }
-
-                    // Calculate neighbor indices
-                    nx = Point.x + di;
-                    ny = Point.y + dj;
-                    nz = Point.z + dk;
-
-                    // Check if the neighbor is within array bounds
-                    if (nx >= 0 && nx < Constants->dimX_int &&
-                        ny >= 0 && ny < Constants->dimY_int &&
-                        nz >= 0 && nz < Constants->dimZ_int) {
-
-                        // Check if the neighbor has a value of 1
-                        if (Data->meshFluidHost(nx, ny, nz) == TypeSearched) {
-                            return true;  // Found a neighbor with a value of TypeSearched
-                        }
-                    }
-                }
-            }
-        }
-
-        return true;  // No neighbor with a value of TypeSearched found
-
-
     }
 
     std::vector <boundaryConditionInlet> boundary_vector_inlet;
