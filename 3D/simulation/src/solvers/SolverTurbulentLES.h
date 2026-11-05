@@ -86,7 +86,7 @@ class SolverTurbulentLES {
     using VectorType = LBMTraits::VectorType;
     using VectorTypeProbeCuda = LBMTraits::VectorTypeProbeCuda;
     using VectorTypeProbeHost = LBMTraits::VectorTypeProbeHost;
-    using VectorTypeInt = LBMTraits::VectorType;
+    using VectorTypeInt = LBMTraits::VectorTypeInt;
 
     using LBMDataPointer = TNL::Pointers::SharedPointer<LBMData, DeviceType>;
     using LBMConstantsPointer = TNL::Pointers::SharedPointer<LBMConstants, DeviceType>;
@@ -305,18 +305,19 @@ public:
             RealType yProbe = Constants ->ProbeLocation.y();
             RealType zProbe = Constants ->ProbeLocation.z();
 
-            int xLat = std::round(xProbe/(Constants -> BBmaxx - Constants -> BBminx + 2*(Constants->additional_factor/Constants->resolution_factor))*Constants -> dimX_int);
-            int yLat = std::round(yProbe/(Constants -> BBmaxy - Constants -> BBminy+ 2*(Constants->additional_factor/Constants->resolution_factor))*Constants -> dimY_int);
-            int zLat = std::round(zProbe/(Constants -> BBmaxz - Constants -> BBminz+ 2*(Constants->additional_factor/Constants->resolution_factor))*Constants -> dimZ_int);
-
+            auto toLattice = [&](RealType coord, RealType bbMin) {
+                return static_cast<int>(std::floor((coord - bbMin) * Constants->resolution_factor + Constants->additional_factor));
+            };
+            const int xLat = toLattice(xProbe, Constants->BBminx);
+            const int yLat = toLattice(yProbe, Constants->BBminy);
+            const int zLat = toLattice(zProbe, Constants->BBminz);
 
             if(verbose){
                 std::cout << "Probe location in lattice " << xLat << ", " << yLat << ", " << zLat << std::endl;
             }
 
-            assert(xLat >= Constants -> dimX_int && "Probe must be in the domain!");
-            assert(yLat >= Constants -> dimY_int && "Probe must be in the domain!");
-            assert(zLat >= Constants -> dimZ_int && "Probe must be in the domain!");
+            if (xLat < 0 || yLat < 0 || zLat < 0 || xLat >= Constants->dimX_int || yLat >= Constants->dimY_int || zLat >= Constants->dimZ_int)
+                throw std::out_of_range("Probe outside domain.");
 
             VectorTypeInt Probe(xLat, yLat, zLat);
             Constants -> ProbeLocationLat = Probe;

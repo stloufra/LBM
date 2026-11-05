@@ -51,11 +51,7 @@ struct MomentTimeAvg
         auto rhoTimeAvg_view = Data->rhoTimeAvg.getView();
         auto uTimeAvg_view = Data->uTimeAvg.getView();
 
-        auto timeAveraged = Constants->timeAveraged;
-
         RealType TAC = static_cast<RealType>(Constants->TimeAvgCounter);
-
-        printf("Counter %d" , Constants->TimeAvgCounter);
 
         auto timeAverage = [=]
         __cuda_callable__(
@@ -76,7 +72,7 @@ struct MomentTimeAvg
         parallelFor<DeviceType>(begin, end, timeAverage);
 
 
-        timeAveraged = true;
+        Constants->timeAveraged = true;
     }
 };
 

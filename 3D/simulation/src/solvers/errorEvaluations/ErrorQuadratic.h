@@ -40,8 +40,8 @@ struct ErrorQuadratic
                                        (uStatArr_view[i].x() - uErrorStatArr_view[i].x()) +
                                        (uStatArr_view[i].y() - uErrorStatArr_view[i].y()) *
                                        (uStatArr_view[i].y() - uErrorStatArr_view[i].y()) +
-                                       (uStatArr_view[i].y() - uErrorStatArr_view[i].z()) *
-                                       (uStatArr_view[i].y() - uErrorStatArr_view[i].z());
+                                       (uStatArr_view[i].z() - uErrorStatArr_view[i].z()) *
+                                       (uStatArr_view[i].z() - uErrorStatArr_view[i].z());
 
                 return sqrt(add1);
             }
