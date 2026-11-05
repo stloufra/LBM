@@ -84,12 +84,12 @@ struct D3Q15
             {-1, -1, -1},
             {1,  1,  1}};
 
-    const RealType weight[15] = {   2.f / 9.f, // 0
+    const RealType weight[15] = {   RealType(2) / RealType(9), // 0
 
-                                    1.f / 9.f, 1.f / 9.f, 1.f / 9.f, 1.f / 9.f, 1.f / 9.f, 1.f / 9.f, // 1-6
+                                    RealType(1) / RealType(9), RealType(1) / RealType(9), RealType(1) / RealType(9), RealType(1) / RealType(9), RealType(1) / RealType(9), RealType(1) / RealType(9), // 1-6
 
-                                    1.f / 72.f, 1.f / 72.f, 1.f / 72.f, 1.f / 72.f, 1.f / 72.f,
-                                    1.f / 72.f, 1.f / 72.f, 1.f / 72.f}; // 7 - 14
+                                    RealType(1) / RealType(72), RealType(1) / RealType(72), RealType(1) / RealType(72), RealType(1) / RealType(72), RealType(1) / RealType(72),
+                                    RealType(1) / RealType(72), RealType(1) / RealType(72), RealType(1) / RealType(72)}; // 7 - 14
 
     const int c_rev[15] = {   0, 2, 1, 4, 3, 6,
                               5, 8, 7, 10, 9, 12, 11,

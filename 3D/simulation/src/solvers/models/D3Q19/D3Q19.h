@@ -95,10 +95,10 @@ struct D3Q19
 
 
 
-    const RealType weight[19] = {1.f / 3.f, // 0
-                1.f / 18.f, 1.f / 18.f, 1.f / 18.f, 1.f / 18.f, 1.f / 18.f, 1.f / 18.f, // 1-6
-                1.f / 36.f, 1.f / 36.f, 1.f / 36.f, 1.f / 36.f, 1.f / 36.f, 1.f / 36.f,
-                1.f / 36.f, 1.f / 36.f, 1.f / 36.f, 1.f / 36.f, 1.f / 36.f, 1.f / 36.f};// 7- 18
+    const RealType weight[19] = {RealType(1) / RealType(3), // 0
+                RealType(1) / RealType(18), RealType(1) / RealType(18), RealType(1) / RealType(18), RealType(1) / RealType(18), RealType(1) / RealType(18), RealType(1) / RealType(18), // 1-6
+                RealType(1) / RealType(36), RealType(1) / RealType(36), RealType(1) / RealType(36), RealType(1) / RealType(36), RealType(1) / RealType(36), RealType(1) / RealType(36),
+                RealType(1) / RealType(36), RealType(1) / RealType(36), RealType(1) / RealType(36), RealType(1) / RealType(36), RealType(1) / RealType(36), RealType(1) / RealType(36)};// 7- 18
 
 
     const int c_rev[19] = {0, 2, 1, 4, 3, 6,

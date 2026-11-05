@@ -66,7 +66,7 @@ struct D3Q27
         onf = 17,
         osb = 18,
 
-        // weight is 1/126 for (19-26)
+        // weight is 1/216 for (19-26)
         wnb = 19,
         esf = 20,
         wsf = 21,
@@ -110,12 +110,12 @@ struct D3Q27
             {-1, -1, -1},   //25
             {1,  1,  1}};   //26
 
-    const RealType weight[27] = {8.f / 27.f, // 0
-                2.f / 27.f, 2.f / 27.f, 2.f / 27.f, 2.f / 27.f, 2.f / 27.f, 2.f / 27.f, // 1-6
-                1.f / 54.f, 1.f / 54.f, 1.f / 54.f, 1.f / 54.f, 1.f / 54.f, 1.f / 54.f,
-                1.f / 54.f, 1.f / 54.f, 1.f / 54.f, 1.f / 54.f, 1.f / 54.f, 1.f / 54.f, // 7- 18
-                1.f / 216.f, 1.f / 216.f, 1.f / 216.f, 1.f / 216.f, 1.f / 216.f,
-                1.f / 216.f, 1.f / 216.f, 1.f / 216.f}; // 19-26
+    const RealType weight[27] = {RealType(8) / RealType(27), // 0
+                RealType(2) / RealType(27), RealType(2) / RealType(27), RealType(2) / RealType(27), RealType(2) / RealType(27), RealType(2) / RealType(27), RealType(2) / RealType(27), // 1-6
+                RealType(1) / RealType(54), RealType(1) / RealType(54), RealType(1) / RealType(54), RealType(1) / RealType(54), RealType(1) / RealType(54), RealType(1) / RealType(54),
+                RealType(1) / RealType(54), RealType(1) / RealType(54), RealType(1) / RealType(54), RealType(1) / RealType(54), RealType(1) / RealType(54), RealType(1) / RealType(54), // 7- 18
+                RealType(1) / RealType(216), RealType(1) / RealType(216), RealType(1) / RealType(216), RealType(1) / RealType(216), RealType(1) / RealType(216),
+                RealType(1) / RealType(216), RealType(1) / RealType(216), RealType(1) / RealType(216)}; // 19-26
 
     const int c_rev[27] = {0, 2, 1, 4, 3, 6,
                                       5, 8, 7, 10, 9, 12, 11,
