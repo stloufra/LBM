@@ -109,33 +109,24 @@ struct BounceSymmetryHalf {
                     }
 
 
-                    else if (!reg)
+                    else
                     {
-                        if (mesh_view(dx, y, dz) != 0 && mesh_view(dx, y, dz) != -2)
-                        {
-                            //not outlet not wall
-                            if (norm.x() * MD.c[vel][0] + norm.y() * MD.c[vel][1] + norm.z() * MD.c[vel][2] < 0)
-                            {
-                                df_view(x, y, z, vel) = df_post_view(dx, y, dz, MD.c_sym_y[vel]);
-                            }
-                        }
-                        else if (mesh_view(dx, y, dz) == -2)
-                        {
+                        const int cn = norm.y() * MD.c[vel][1];
+                        const int source = cn < 0 ? mesh_view(dx, y, dz) : mesh_view(dx, y - MD.c[vel][1], dz);
 
-                            if (norm.x() * MD.c[vel][0] + norm.y() * MD.c[vel][1] + norm.z() * MD.c[vel][2] < 0)
-                            {
-                                //outlet
-                                df_view(x, y, z, vel) = df_post_view(dx, y, dz, MD.c_sym_y[vel]);
-                                // a jeste tam na kopírovat
-                                df_view(dx, y, dz, MD.c_sym_y[MD.c_rev[vel]]) = df_post_view(dx, y, dz, MD.c_rev[vel]);
-                            }
-
-
-                        }
-                        else if (mesh_view(dx, y, dz) == 0)
+                        if (source == 0)
                         {
                             //o stenu BB
                             df_view(x, y, z, vel) = df_post_view(x, y, z, MD.c_rev[vel]);
+                        }
+                        else if (cn < 0)
+                        {
+                            df_view(x, y, z, vel) = df_post_view(dx, y, dz, MD.c_sym_y[vel]);
+                            if (source == -2)
+                            {
+                                // a jeste tam na kopírovat
+                                df_view(dx, y, dz, MD.c_sym_y[MD.c_rev[vel]]) = df_post_view(dx, y, dz, MD.c_rev[vel]);
+                            }
                         }
                     }
                 }
