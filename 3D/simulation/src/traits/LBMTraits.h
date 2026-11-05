@@ -14,55 +14,55 @@
 using namespace TNL;
 using namespace TNL::Algorithms;
 
-typedef struct {
+struct Vertex {
     int x, y, z;
-} Vertex;
+};
 
-typedef struct {
+struct Normal {
     int x, y, z;
-} Normal;
+};
 
-//typedef struct {
+//struct Velocity {
 //    double ux, uy, uz;
-//} Velocity;
+//};
 
 using Vector = TNL::Containers::StaticVector< 3, float >;
 
-typedef struct {
+struct boundaryConditionInlet {
     Vertex vertex;
     Vector normal;
     Vector velocity;
     bool regular;
-} boundaryConditionInlet;
+};
 
-typedef struct {
+struct boundaryConditionOutlet {
     Vertex vertex;
     Vector normal;
     float density;
     bool regular;
-} boundaryConditionOutlet;
+};
 
-typedef struct {
+struct boundaryConditionSymmetry {
     Vertex vertex;
     Vector normal;
     bool regular;
-} boundaryConditionSymmetry;
+};
 
-typedef struct {
+struct boundaryConditionPeriodic {
     Vertex vertex;
     Vector normal;
     int periodicIndex;
     bool regular;
-} boundaryConditionPeriodic;
+};
 
-typedef struct {
+struct boundaryConditionWall {
     Vertex vertex;
     bool regular;
-} boundaryConditionWall;
+};
 
-typedef struct {
+struct d3 {
     double x, y, z;
-} d3;
+};
 
 class LBMTraits {
 
