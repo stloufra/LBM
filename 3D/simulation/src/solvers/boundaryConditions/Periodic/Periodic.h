@@ -7,6 +7,8 @@
 
 #include "../../../traits/LBMTraits.h"
 
+// Overlap periodicity: node on one periodic plane duplicates node on partner plane (periodicIndex).
+// Two passes, since partner's wall bounce-back must land before its populations are copied.
 template<typename MODELDATA>
 struct Periodic {
     using RealType = LBMTraits::RealType;
@@ -27,118 +29,52 @@ struct Periodic {
 
         MODELDATA MD;
 
-        VectorType norm_x(1,0,0);
-        VectorType norm_y(0,1,0);
-        VectorType norm_z(0,0,1);
-
-
-        auto abs_cast = []
-        __cuda_callable__ (const VectorType& v) {
-            return TNL::Containers::StaticVector<3, unsigned int>(
-                std::abs(v[0]), std::abs(v[1]), std::abs(v[2])
-            );
+        auto normalDotC = [=] __cuda_callable__ (const Vector &norm, int vel) mutable {
+            return norm.x() * MD.c[vel][0] + norm.y() * MD.c[vel][1] + norm.z() * MD.c[vel][2];
         };
 
-
-        auto bb_per = [=]
+        auto bounceBack = [=]
         __cuda_callable__(
-        const TNL::Containers::StaticArray<1, int> &nod  ) mutable
+        const TNL::Containers::StaticArray<1, int> &nod) mutable
         {
+            const auto bc = periodic_view[nod.x()];
+            if (bc.regular)
+                return;
 
+            const Vertex vert = bc.vertex;
 
-            Vertex vert = periodic_view[nod.x()].vertex;
-            auto norm = periodic_view[nod.x()].normal;
-            auto reg = periodic_view[nod.x()].regular;
-            auto perIdx = periodic_view[nod.x()].periodicIndex;
+            for (int vel = 0; vel < Nvel; vel++) {
+                if (normalDotC(bc.normal, vel) > 0)
+                    continue;
 
-            int i = vert.x;
-            int j = vert.y;
-            int k = vert.z;
-
-
-            if (abs_cast(norm) == norm_x) {
-                for(int vel = 0; vel < Nvel; vel++)
-                {
-                    if(norm.x() * MD.c[vel][0] + norm.y() * MD.c[vel][1] + norm.z() * MD.c[vel][2] < 0)
-                    {
-                            df_view(i,j,k,vel)=df_view(perIdx,j,k,vel);
-                    }
-
-                    if(!reg && norm.x() * MD.c[vel][0] + norm.y() * MD.c[vel][1] + norm.z() * MD.c[vel][2] <= 0 )
-                    {
-                        int dx, dy, dz;
-
-                        dx = vert.x + MD.c[vel][0];
-                        dy = vert.y + MD.c[vel][1];
-                        dz = vert.z + MD.c[vel][2];
-
-                        if (mesh_view(dx, dy, dz) == 0)
-                        {
-                            df_view(i,j,k, MD.c_rev[vel]) = df_post_view(i,j,k, vel);
-                        }
-                    }
-
-                }
-            }
-            else if (abs_cast(norm) == norm_y) {
-                for(int vel = 0; vel < Nvel; vel++)
-                {
-                    if(norm.x() * MD.c[vel][0] + norm.y() * MD.c[vel][1] + norm.z() * MD.c[vel][2] < 0)
-                    {
-
-                            df_view(i,j,k,vel)=df_view(i,perIdx,k,vel);
-
-
-                    }
-
-                    if(!reg && norm.x() * MD.c[vel][0] + norm.y() * MD.c[vel][1] + norm.z() * MD.c[vel][2] <= 0 )
-                    {
-                        int dx, dy, dz;
-
-                        dx = vert.x + MD.c[vel][0];
-                        dy = vert.y + MD.c[vel][1];
-                        dz = vert.z + MD.c[vel][2];
-
-                        if (mesh_view(dx, dy, dz) == 0)
-                        {
-                            df_view(i,j,k, MD.c_rev[vel]) = df_post_view(i,j,k, vel);
-                        }
-                    }
-                }
-            }
-            else if (abs_cast(norm) == norm_z) {
-                for(int vel = 0; vel < Nvel; vel++)
-                {
-                    if(norm.x() * MD.c[vel][0] + norm.y() * MD.c[vel][1] + norm.z() * MD.c[vel][2] < 0)
-                    {
-
-                            df_view(i,j,k,vel)=df_view(i,j,perIdx,vel);
-
-                    }
-
-                    if(!reg && norm.x() * MD.c[vel][0] + norm.y() * MD.c[vel][1] + norm.z() * MD.c[vel][2] <= 0 )
-                    {
-                        int dx, dy, dz;
-
-                        dx = vert.x + MD.c[vel][0];
-                        dy = vert.y + MD.c[vel][1];
-                        dz = vert.z + MD.c[vel][2];
-
-                        if (mesh_view(dx, dy, dz) == 0)
-                        {
-                            df_view(i,j,k, MD.c_rev[vel]) = df_post_view(i,j,k, vel);
-                        }
-                    }
-
-                }
-            }
-            else {
-                printf("Fail. \n");
+                if (mesh_view(vert.x + MD.c[vel][0], vert.y + MD.c[vel][1], vert.z + MD.c[vel][2]) == 0)
+                    df_view(vert.x, vert.y, vert.z, MD.c_rev[vel]) = df_post_view(vert.x, vert.y, vert.z, vel);
             }
         };
 
+        auto copy = [=]
+        __cuda_callable__(
+        const TNL::Containers::StaticArray<1, int> &nod) mutable
+        {
+            const auto bc = periodic_view[nod.x()];
+            const Vertex vert = bc.vertex;
 
-        parallelFor<DeviceType>(0, Constants->periodic_num, bb_per);
+            int partner[3] = {vert.x, vert.y, vert.z};
+            if (bc.normal.x() != 0)
+                partner[0] = bc.periodicIndex;
+            else if (bc.normal.y() != 0)
+                partner[1] = bc.periodicIndex;
+            else
+                partner[2] = bc.periodicIndex;
+
+            for (int vel = 0; vel < Nvel; vel++) {
+                if (normalDotC(bc.normal, vel) < 0)
+                    df_view(vert.x, vert.y, vert.z, vel) = df_view(partner[0], partner[1], partner[2], vel);
+            }
+        };
+
+        parallelFor<DeviceType>(0, Constants->periodic_num, bounceBack);
+        parallelFor<DeviceType>(0, Constants->periodic_num, copy);
     }
 
 
