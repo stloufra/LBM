@@ -5,6 +5,7 @@
 #ifndef NONDIMANSIONALIZEFACTROSVELOCITY_H
 #define NONDIMANSIONALIZEFACTROSVELOCITY_H
 
+#include <stdexcept>
 #include "../../traits/LBMTraits.h"
 
 template<typename MODELDATA>
@@ -26,7 +27,8 @@ struct NonDimensiolnaliseFactorsVelocity
             std::cout << "\n Lattice speed should not be higher than 0.1 due to stability close to speed of sound.\n";
         }
 
-        assert(Constants->U_lb < Constants->cs && "Speed should not be greater than speed of sound!");
+        if (Constants->U_lb >= Constants->cs)
+            throw std::invalid_argument("U_lb must be below lattice speed of sound.");
 
         Constants->L_fyz = abs(Constants->BBmaxx - Constants->BBminx) * Constants->conversion_factor_fyz;
         RealType L_fyz_y = abs(Constants->BBmaxy - Constants->BBminy) * Constants->conversion_factor_fyz;
@@ -76,7 +78,8 @@ struct NonDimensiolnaliseFactorsVelocity
 
         }
 
-        assert(Constants->tau > 0.5 && Constants->tau < 0.99);
+        if (Constants->tau <= 0.5)
+            throw std::invalid_argument("tau must exceed 0.5.");
 
         Constants->omega = 1.f / Constants->tau;
 

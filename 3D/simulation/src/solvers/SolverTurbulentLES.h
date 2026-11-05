@@ -6,7 +6,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <cassert>
+#include <stdexcept>
 #include <omp.h>
 
 #include <TNL/Timer.h>
@@ -282,16 +282,14 @@ public:
             Constants->plot_every_it = std::ceil(Constants->plot_every / Constants->Ct);
         }
         else if( Constants -> plot_every_it  == -1 && Constants -> plot_every == -1) {
-            std::cout << "\n !!! CANT GIVE BOTH err_every AND plot_every_it !!!\n";
-            assert(false);
+            throw std::invalid_argument("Set plot_every or plot_every_it.");
         }
 
         if( Constants -> err_every_it  == -1 && Constants -> err_every != -1) {
             Constants->err_every_it = std::ceil(Constants->err_every / Constants->Ct);
         }
         else if( Constants -> err_every_it  == -1 && Constants -> err_every == -1) {
-            std::cout << "\n !!! CANT GIVE BOTH err_every AND err_every_it !!!\n";
-            assert(false);
+            throw std::invalid_argument("Set err_every or err_every_it.");
         }
         Constants->iterations = std::ceil(Constants->time / Constants->Ct);
 
