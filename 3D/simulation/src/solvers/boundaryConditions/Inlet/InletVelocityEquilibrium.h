@@ -81,7 +81,7 @@ struct InletVelocityEquilibrium {
                      df_view(i,j,k,v)= f_equilibrium_defined(uxb, uyb, uzb, rhob, v);
                  }
              }
-             if ( norm == xm){
+             else if ( norm == xm){
                  RealType ux1 = u_view(i + 1 , j, k).x();
                  RealType ux2 = u_view(i + 2 , j, k).x();
 
