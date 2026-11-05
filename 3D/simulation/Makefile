@@ -10,7 +10,7 @@ CUDA_SOURCES := $(wildcard *.cu)
 CUDA_TARGETS := $(CUDA_SOURCES:%.cu=%)
 
 ## targets definitions follow
-.PHONY: all host cuda host-sim
+.PHONY: all host cuda host-sim test test-cuda
 all: host cuda
 host: $(TARGETS)
 cuda: $(CUDA_TARGETS)
@@ -21,9 +21,15 @@ host-sim: $(CUDA_SOURCES:%.cu=%-host)
 %-host: %.cu
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -x c++ -o $@ $< $(LDLIBS)
 
+test: tests/conservation-host
+	./tests/conservation-host
+
+test-cuda: tests/conservation
+	./tests/conservation
+
 .PHONY: clean
 clean:
-	rm -f *.d *.o *.cuo results/*.vtk results/*.csv $(TARGETS) $(CUDA_TARGETS) *-host
+	rm -f *.d *.o *.cuo results/*.vtk results/*.csv $(TARGETS) $(CUDA_TARGETS) *-host tests/*-host tests/*.cuo tests/conservation
 
 .PHONY: run
 run:
@@ -44,7 +50,10 @@ $(CUDA_TARGETS): % : %.cuo
 $(SOURCES:%.cpp=%.o): %.o: %.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
-$(CUDA_SOURCES:%.cu=%.cuo): %.cuo : %.cu
+tests/conservation: tests/conservation.cuo
+	$(CXX) $(CUDA_LDFLAGS) -o $@ $< $(CUDA_LDLIBS)
+
+$(CUDA_SOURCES:%.cu=%.cuo) tests/conservation.cuo: %.cuo : %.cu
 	$(CUDA_CXX) $(CUDA_CPPFLAGS) $(CUDA_CXXFLAGS) -c -o $@ $<
 
 
