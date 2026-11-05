@@ -151,14 +151,12 @@ public:
     
     StaticArray< 2, int > begin1{ 0, 0};
     StaticArray< 2, int > end1{ Nx, Ny};
-    //std::cout << "size: " << end1 << " array size: " << rho_view.getSizes() << " " << mesh_view.getSizes() << std::endl; 
+    //std::cout << "size: " << end1 << ", array size: " << rho_view.getSizes() << ", mesh size:" << mesh_view.getSizes() << std::endl;
     parallelFor< DeviceType >( begin1, end1, init_variables );
-    //printf( "init_variabes \n");
 
     StaticArray< 3, int > begin2{ 0, 0, 0};
     StaticArray< 3, int > end2{ Nx, Ny, Nvel};
     parallelFor< DeviceType >( begin2, end2, init_df );
-    //printf( "init_df \n");
 
     Fx = Fx0/Cm/Cl*Ct*Ct;
     Fy = Fy0/Cm/Cl*Ct*Ct;
@@ -315,6 +313,7 @@ public:
 
   }
 
+
   void streaming()
   {
     auto df_view = df.getView();
@@ -351,8 +350,6 @@ public:
     StaticArray< 3, int > begin{ 0, 0, 0};
     StaticArray< 3, int > end{ Nx, Ny, Nvel};
     parallelFor< DeviceType >( begin, end, stream );
-  
-    //std::cout<<"streaming sucesfull.\n";
     }
 
   void bounce_back()
@@ -387,7 +384,6 @@ public:
     // MESH - structured bolean values of BC
     // 0 = solid | 1 = fluid | 2 = inlet | 3 = outlet | 4 = moving wall up | 5 = moving wall down | 6 = symmetry
 
-    //BOUNCE BACK WALL
     auto f_equilibrium = [=] __cuda_callable__ ( const int &j,const int &i, const int &k ) mutable 
     {
       RealType cu, u2;
@@ -438,13 +434,6 @@ public:
 
       if(mesh_view(i.y()+1,i.x()+1)==2) //INLET
       {
-          if(velocities_x_view(i.y()+1,i.x()+1)>0)
-          {
-            int x = i.x() + 1;
-            df_view(i.y(),x,1)=df_post_view(i.y(),x,3) + 6*weight[1]*rho_view(i.y(),x)*velocities_x_view(i.y()+1,i.x()+1)*Cu_inverse;
-            df_view(i.y(),x,5)=df_post_view(i.y(),x,7) + 6*weight[5]*rho_view(i.y(),x)*velocities_x_view(i.y()+1,i.x()+1)*Cu_inverse;
-            df_view(i.y(),x,8)=df_post_view(i.y(),x,6) + 6*weight[8]*rho_view(i.y(),x)*velocities_x_view(i.y()+1,i.x()+1)*Cu_inverse;  
-          }
 
           RealType u_x_b = velocities_x_view(i.y()+1,i.x()+1)*Cu_inverse;
           RealType u_y_b = 0;
@@ -695,10 +684,17 @@ public:
     StaticArray< 3, int > end1{ Nx, Ny, Nvel};
     parallelFor< DeviceType >( begin1, end1, bb_wall);
 
+
+    StaticArray< 2, int > begin3{ Nx-4, 0};
+    StaticArray< 2, int > end3{ Nx, Ny};
+    parallelFor< DeviceType >( begin3, end3, bb_outlet );
+
     StaticArray< 2, int > begin2{ 0, 0};
     StaticArray< 2, int > end2{ Nx, Ny};
     parallelFor< DeviceType >( begin2, end2, bb_bc );
-    //std::cout<<"bb sucesfull.\n";
+
+
+
   }
 
   void postpro()
@@ -719,8 +715,8 @@ public:
       if(mesh_view(i.y()+1,i.x()+1)==1 ||  mesh_view(i.y()+1, i.x()+1) == 2 || mesh_view(i.y()+1, i.x()+1) == 3 ||  mesh_view(i.y()+1, i.x()+1) == 6 ||  mesh_view(i.y()+1, i.x()+1) == 7 ||  mesh_view(i.y()+1, i.x()+1) == 8)
       {
         rho_view(i.y(),i.x())=df_view(i.y(),i.x(),0)+df_view(i.y(),i.x(),1)+df_view(i.y(),i.x(),2)+df_view(i.y(),i.x(),3)+df_view(i.y(),i.x(),4)+df_view(i.y(),i.x(),5)+df_view(i.y(),i.x(),6)+df_view(i.y(),i.x(),7)+df_view(i.y(),i.x(),8);
-        ux_view(i.y(),i.x())=(df_view(i.y(),i.x(),1)+df_view(i.y(),i.x(),5)+df_view(i.y(),i.x(),8)-df_view(i.y(),i.x(),3)-df_view(i.y(),i.x(),6)-df_view(i.y(),i.x(),7))/rho_view(i.y(),i.x());
-        uy_view(i.y(),i.x())=(df_view(i.y(),i.x(),5)+df_view(i.y(),i.x(),6)+df_view(i.y(),i.x(),2)-df_view(i.y(),i.x(),7)-df_view(i.y(),i.x(),8)-df_view(i.y(),i.x(),4))/rho_view(i.y(),i.x());
+        ux_view(i.y(),i.x())=(df_view(i.y(),i.x(),1)+df_view(i.y(),i.x(),5)+df_view(i.y(),i.x(),8)-df_view(i.y(),i.x(),3)-df_view(i.y(),i.x(),6)-df_view(i.y(),i.x(),7))/rho_view(i.y(),i.x()) + Fx/rho_view(i.y(),i.x())*tau;
+        uy_view(i.y(),i.x())=(df_view(i.y(),i.x(),5)+df_view(i.y(),i.x(),6)+df_view(i.y(),i.x(),2)-df_view(i.y(),i.x(),7)-df_view(i.y(),i.x(),8)-df_view(i.y(),i.x(),4))/rho_view(i.y(),i.x()) + Fy/rho_view(i.y(),i.x())*tau - g*tau;      
 
 
       }
@@ -1038,6 +1034,7 @@ public:
     dRho = 0; //dRho_/Cp*3; //TODO
 
     printf("Drho %f\n", this->dRho );
+
 
 
     RealType Re = U_fyz*L_fyz/ny_fyz;

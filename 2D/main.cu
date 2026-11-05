@@ -50,10 +50,14 @@ int main()
     Obj_rectangle back_wall(Nx , Nx, 0, Ny-1);
     Obj_rectangle inlet(0, 0, 0, Ny-1 );
     Obj_rectangle outlet(Nx-1 , Nx-1, 0, Ny-1);
-    Obj_cylinder cylinder(Ny/5, Nx/4, Ny/2);
+    //Obj_cylinder cylinder(Ny/5, Nx/4,Ny/2+0.05f*Ny);
+    //Obj_rectangle blockage(-1, Nx/5, -1, Ny/2);
+
+    Obj_rectangle Symblockage(Nx/6, Nx/5, -1, Ny/4);
+
 
     // MESH - structured bolean values of BC
-    // 0 = solid | 1 = fluid | 2 = equilibrium inlet (ux, left) | 3 = outlet (rho=1, right) | 4 = moving wall (up) | 5 = moving wall (down) | 6 = symmetry down
+    // 0 = solid | 1 = fluid | 2 = equilibrium inlet (ux, left) | 3 = outlet (rho=1, right) | 4 = moving wall (up) | 5 = moving wall (down) | 6 = symmetry
 
     mesh_rectangle.meshing(lower_wall,0);
     mesh_rectangle.meshing(upper_wall,0);
@@ -62,10 +66,11 @@ int main()
 
     mesh_rectangle.meshing(symmetry,6);
     mesh_rectangle.meshing(outlet, 3);
-    mesh_rectangle.meshing_moving(inlet, ux, 0, 2);
+    //mesh_rectangle.meshing_inlet(inlet, ux, 3.f/4.f*Ny, Ny/2, 2);
+    mesh_rectangle.meshing_inlet(inlet, ux, 0, Ny*2, 2);
 
-    mesh_rectangle.meshing(cylinder, 0);
-
+    //mesh_rectangle.meshing(cylinder, 0);
+    mesh_rectangle.meshing(Symblockage,0);
 
     //output mesh
     mesh_rectangle.output_VTK();
@@ -122,7 +127,8 @@ int main()
         solver.postpro();
         timer_postpro.stop();
 
-        if(k%500==0 && k!=0)
+
+        if(k%err_every_it==0)
         {
 
             timer_err.start();
