@@ -37,7 +37,7 @@ struct NonDimensiolnaliseFactorsVelocity
         std::cout << "L in Z direction is: " << L_fyz_z << std::endl;
 
 
-        Constants->Cl = Constants->L_fyz / Constants->dimX_int;
+        Constants->Cl = Constants->conversion_factor_fyz / Constants->resolution_factor;
 
         RealType U_fyz;
 
